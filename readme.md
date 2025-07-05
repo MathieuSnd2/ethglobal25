@@ -15,18 +15,16 @@ It can become hard to follow investments and track positions accross all of thes
 Our solution is to aggregate these yield opportunities into higher-level aggregator vaults: we called Meta-Vaults.
 
 
+A currator has a high level strategy, e.g. 30% staking on Vault A, 20% lending on Vault B and 50% liquidity providing on vault C.
+Meta-Vaults enable them to use a Factory to deploy a decentralized vault and leverage their own strategy, in exchange for a fee.
+These vaults could be used for arbitraging or even market making.
+
+
+If used broadly, it would benefit the entire eco-system to bring more liquidity and forward it to all sides of DeFi.
+
+
 
 ### Technical details
-
-
-A manager has a high level strategy, e.g. 30% staking on Vault A, 20% lending on Vault B and 50% liquidity providing on vault C.
-Meta-Vaults enable them to use a factory to deploy a decentralized vault and leverage their own strategy, in
-  to the meta vaults as well as addresses of ERC4626 middlewares.  
-
-
-- The main contract works with the Meta-Vault Token (MVT)
-- No on-chain rebalancing.
-- When receiving liquidity, the liquidity is distributed to the middlewares using the weight of current liquidity.
 
 
 At any time, the meta-vault has the following assets and liabilities:
@@ -34,15 +32,10 @@ At any time, the meta-vault has the following assets and liabilities:
 | Liability               | Assets                        |
 |-------------------------|-------------------------------|
 | Meta-Vault Shares (MVS) | Underlying Asset Shares (UAS) |
-| Count:     $L$          | Count: $S_i$      |
 
-
-The manager commands the weights of the valuation of the underlying tokens in the sub-vaults using a subsequent withdraw/redeem call.
-
-When the user sends liquidity onto the meta-vault (MV), the later dispaches the liquidity respecting these weights.
-
-When the user withdraws however, the MV 
-When the prices changes, the weight of UAS stay the same, and the manager can rebalance the underlying assets by changing the weights accordingly.
+When receiving liquidity, the liquidity is distributed to the middlewares following the weights. 
+When total assets of underlying vaults change, the currator updates the weights through a dedicated funciton, which would make a rebalancing.
+The rebalancing and weight update system is not yet implemented by our team.
 
 
 ## Going further
