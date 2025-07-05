@@ -98,10 +98,10 @@ contract MyVaultScenarioTest is Test {
         assertEq(middleWares[1].balanceOf(address(metaVault)), 0.75 ether, "Step 4 LP");
 
 
-/*
         // 5. Bob deposits 1 ETH
         vm.startPrank(bob);
         metaVault.deposit(1 ether, bob);
+/*
 
         assertEq(metaVault.totalAssets(), 2.5 ether, "Step 5");
         assertApproxEqAbs(metaVault.balanceOf(bob), 1.5 ether, 1, "Step 5 LP");
