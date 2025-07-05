@@ -89,12 +89,7 @@ contract MetaVault is ERC4626 {
      * NOTE: most implementations will require pre-approval of the Vault with the Vault’s underlying asset token.
      */
     function deposit(uint256 assets, address receiver) public override(ERC4626) returns (uint256 shares) {
-        uint256 maxAssets = maxDeposit(receiver);
-        if (assets > maxAssets) {
-            revert ERC4626ExceededMaxDeposit(receiver, assets, maxAssets);
-        }
-        shares = previewDeposit(assets);
-        _deposit(_msgSender(), receiver, assets, shares);
+        shares = super.deposit(assets, receiver);
         dispatch(assets);
         return shares;
     }
