@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import "../src/MetaVault.sol";
+import "../src/SimpleMiddleware.sol";
 import "./MockERC20.sol";
 
 contract MyVaultScenarioTest is Test {
@@ -14,15 +15,14 @@ contract MyVaultScenarioTest is Test {
 
     function setUp() public {
         asset = new MockERC20("MockToken", "MTK", address(this), 0);
-        IERC4626[] memory middleWares = {
-             new SimpleVault(asset),
-             new SimpleVault(asset),
-        };
-        uint256[] memory weights = {
-            uint256(-1) / 2 // one half in 
-        };
+        IERC4626[] memory middleWares = new IERC4626[](2);
+        middleWares[0] = new SimpleVault(asset);
+        middleWares[1] = new SimpleVault(asset);
+        uint256[] memory weights = new uint256[](2);
+        weights[0] = (50 << 128) / 100; // 50%
+        weights[1] = (50 << 128) / 100; // 50%
 
-        vault = new MetaVault(ERC20(address(asset)));
+        vault = new MetaVault(ERC20(address(asset)), middleWares, weights);
 
         // Mint tokens to users
         asset.mint(alice, 10 ether);
