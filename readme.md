@@ -3,21 +3,22 @@
 This project aims to be presented at EthGlobal 2025.
 
 ### Motivation
+Decentralized finance (DeFi) offers countless yield opportunities within the Ethereum ecosystem. These are spread across a wide range of lending platforms, liquidity pools, staking protocols, automated market makers, and more.
 
-Decentralized finance yield opportunities are countless in the ethereum eco-system.
-They are split accross different numerous lending platforms, liquidity providing pools, staking protocols, automated market makers, and others.
+Many of these opportunities can be wrapped into ERC-4626-compliant vaults, which serve to aggregate yields on a given platform. However, managing investments and tracking positions across multiple protocols quickly becomes complex.
 
-A lot of these are wrappable in ERC-4626 complient vaults. Vaults aims at gathering opportunities on a given platform.
-It can become hard to follow investments and track positions accross all of these platforms,
-Our solution is to aggregate these yield opportunities into higher-level aggregator vaults: we called Meta-Vaults.
+Our solution is to aggregate these yields into higher-level vaults we call Meta-Vaults.
 
-A currator has a high level strategy, e.g. 30% staking on Vault A, 20% lending on Vault B and 50% liquidity providing on vault C.
-Meta-Vaults enable them to use a Factory to deploy a decentralized vault and leverage their own strategy, in exchange for a fee.
-These vaults could be used for arbitraging or even market making.
+A curator defines a high-level strategy—for example, allocating 30% to staking via Vault A, 20% to lending via Vault B, and 50% to liquidity provision via Vault C. Meta-Vaults enable curators to deploy decentralized vaults via a Factory contract, apply their strategies, and earn fees in return.
 
-If used broadly, it would benefit the entire eco-system to bring more liquidity and forward it to all sides of DeFi.
+These Meta-Vaults can also be used for advanced use cases such as arbitrage or market making.
+
+If widely adopted, this system would benefit the entire ecosystem by deepening liquidity and efficiently distributing capital throughout DeFi.
+
 
 ### Technical details
+
+![Use case](docs/image.png)
 
 At any time, the meta-vault has the following assets and liabilities:
 
@@ -25,18 +26,19 @@ At any time, the meta-vault has the following assets and liabilities:
 | ----------------------- | ----------------------------- |
 | Meta-Vault Shares (MVS) | Underlying Asset Shares (UAS) |
 
-When receiving liquidity, the liquidity is distributed to the middlewares following the weights.
-When total assets of underlying vaults change, the currator updates the weights through a dedicated funciton, which would make a rebalancing.
-The rebalancing and weight update system is not yet implemented by our team.
+When receiving liquidity, the liquidity is distributed to the middlewares following the weights. 
 
 ## Going further
 
-Although this project is really promissing, we couldn't get all the features done during this hackathon.
-This section presents the main features we would thrive implement.
+Although this project shows great promise, we weren't able to implement all planned features during the hackathon.
+This section outlines the key functionalities we aim to develop next.
+
 
 ### Rebalancing
 
-The contract contains the curator address who have the right to rebalance and / or change the allocation percentages between the underlying vault.
+The contract stores the curator's address, who has the authority to rebalance and/or update the allocation percentages across the underlying vaults.
+
+
 
 ### Fees
 
