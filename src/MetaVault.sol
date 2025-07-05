@@ -14,16 +14,15 @@ import {ERC20, IERC20} from "openzeppelin-contracts/contracts/token/ERC20/ERC20.
 contract MetaVault is ERC4626 {
     using Math for uint256;
 
+    uint256 private constant WAD = 1e18;
+    uint8 private constant fpShift = 128;
+
     IERC4626[] internal middleWares;
     /**
      * Fixed point weights:
-     * 2^256 = 1
+     * 2^256 => 100%
      */
     uint256[] internal weights;
-
-    uint256 private constant WAD = 1e18;
-
-    uint8 fpShift = 128;
 
     address internal Manager;
 
@@ -36,17 +35,10 @@ contract MetaVault is ERC4626 {
         weights = weights_;
     }
 
-    /**
-     * @dev Returns the total amount of the underlying asset that is “managed” by Vault.
-     *
-     * - SHOULD include any compounding that occurs from yield.
-     * - MUST be inclusive of any fees that are charged against assets in the Vault.
-     * - MUST NOT revert.
-     */
-    function totalAssets() public view override(ERC4626) returns (uint256 totalManagedAssets) {
+    function totalAssets() public view override(ERC4626) returns (uint256) {
         uint256 sum;
         for (uint32 i = 0; i < middleWares.length; i++) {
-            sum += middleWares[i].balanceOf(address(this));
+            sum += middleWares[i].convertToAssets(middleWares[i].balanceOf(address(this)));
         }
         return sum;
     }
