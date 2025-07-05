@@ -3,18 +3,24 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import "../src/MetaVault.sol";
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
 import "./MockERC20.sol";
 
 contract MyVaultScenarioTest is Test {
-    MyVault vault;
-    ERC20Mock asset;
+    MetaVault vault;
+    MockERC20 asset;
 
     address alice = address(0xA11CE);
     address bob = address(0xB0B);
 
     function setUp() public {
-        asset = new ERC20Mock("MockToken", "MTK", address(this), 0);
-        vault = new MyVault(ERC20(address(asset)));
+        asset = new MockERC20("MockToken", "MTK", address(this), 0);
+        IERC4626[] memory middleWares_;
+        uint256[] memory weights_;
+        vault = new MetaVault(ERC20(address(asset)));
 
         // Mint tokens to users
         asset.mint(alice, 10 ether);
