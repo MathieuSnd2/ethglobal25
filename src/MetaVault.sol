@@ -49,6 +49,8 @@ contract MetaVault is ERC4626 {
     function dispatch(uint256 assets) private {
         for (uint32 i = 0; i < middleWares.length; i++) {
             uint256 allocated = fixedPointMul(assets, weights[i], fpShift);
+
+            IERC20(asset()).approve(address(middleWares[i]), allocated);
             middleWares[i].deposit(allocated, address(this));
         }
     }
