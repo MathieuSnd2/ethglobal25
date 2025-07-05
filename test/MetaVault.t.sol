@@ -2,8 +2,8 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import "../src/MyVault.sol";
-import "./ERC20Mock.sol";
+import "../src/MetaVault.sol";
+import "./MockERC20.sol";
 
 contract MyVaultScenarioTest is Test {
     MyVault vault;
