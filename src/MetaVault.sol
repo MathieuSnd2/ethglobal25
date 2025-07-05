@@ -7,24 +7,22 @@ import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 /**
  * @dev Implementation of the MetaVault aggregator PoC for ethglobal 2025 edition.
- * 
+ *
  * This vault dispatches liquidity to middle wares following weights given by the Manager.
- *  
+ *
  */
 contract MetaVault is ERC4626 {
     IERC4626[] internal middleWares;
     /**
      * Fixed point weights:
      * 2^256 = 1
-     */ 
+     */
     uint256[] internal weights;
 
     uint8 fpShift = 128;
 
     address internal Manager;
 
-
-    
     constructor(IERC20 asset_, IERC4626[] memory middleWares_, uint256[] memory weights_)
         ERC20("MetaVault Share Token", "MVS")
         ERC4626(asset_)
@@ -32,7 +30,6 @@ contract MetaVault is ERC4626 {
         middleWares = middleWares_;
         weights = weights_;
     }
-
 
     /**
      * @dev Returns the total amount of the underlying asset that is “managed” by Vault.
@@ -43,7 +40,7 @@ contract MetaVault is ERC4626 {
      */
     function totalAssets() public view override(ERC4626) returns (uint256 totalManagedAssets) {
         uint256 sum;
-        for(uint32 i = 0; i < middleWares.length; i++) {
+        for (uint32 i = 0; i < middleWares.length; i++) {
             sum += middleWares[i].balanceOf(address(this));
         }
         return sum;
@@ -52,7 +49,7 @@ contract MetaVault is ERC4626 {
     function fixedPointMul(uint256 a, uint256 b, uint8 shift) private pure returns (uint256) {
         return a * b >> shift;
     }
-    
+
     function dispatch(uint256 assets) private view {
         for (uint32 i = 0; i < middleWares.length; i++) {
             uint256 allocated = fixedPointMul(assets, weights[i], fpShift);
@@ -72,12 +69,14 @@ contract MetaVault is ERC4626 {
      * Note that some implementations will require pre-requesting to the Vault before a withdrawal may be performed.
      * Those methods should be performed separately.
      */
-    function withdraw(uint256 assets, address receiver, address owner) public override(ERC4626) returns (uint256 shares) {
-        for (uint32 i = 0; i < middleWares.length; i++) {
-        }
+    function withdraw(uint256 assets, address receiver, address owner)
+        public
+        override(ERC4626)
+        returns (uint256 shares)
+    {
+        for (uint32 i = 0; i < middleWares.length; i++) {}
     }
 
-    
     /**
      * @dev Mints shares Vault shares to receiver by depositing exactly amount of underlying tokens.
      *
@@ -124,10 +123,10 @@ contract MetaVault is ERC4626 {
      * - MUST return a limited value if owner is subject to some withdrawal limit or timelock.
      * - MUST NOT revert.
      */
-    function maxWithdraw(address owner) public override(ERC4626) view returns (uint256 maxAssets) {
+    function maxWithdraw(address owner) public view override(ERC4626) returns (uint256 maxAssets) {
         // don't take risk
         uint256 min = 0;
-        for(uint256 i = 0; i < middleWares.length; i++) {
+        for (uint256 i = 0; i < middleWares.length; i++) {
             min = Math.min(min, middleWares[i].maxWithdraw(address(this)));
         }
         return min;
