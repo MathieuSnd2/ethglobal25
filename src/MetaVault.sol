@@ -59,13 +59,40 @@ contract MetaVault is ERC4626 {
         override(ERC4626)
         returns (uint256 shares)
     {
-        shares = super.withdraw(assets, receiver, owner);
+        uint256 maxAssets = maxWithdraw(owner);
+        if (assets > maxAssets) {
+            revert ERC4626ExceededMaxWithdraw(owner, assets, maxAssets);
+        }
+        shares = previewWithdraw(assets);
         uint256 proportion = shares.mulDiv(WAD, totalSupply());
 
         for (uint32 i; i < middleWares.length; i++) {
             uint256 sharesToRedeem = middleWares[i].totalSupply().mulDiv(proportion, WAD);
             middleWares[i].redeem(sharesToRedeem, address(this), address(this));
         }
+
+        _withdraw(msg.sender, receiver, owner, assets, shares);
+    }
+
+    /// @inheritdoc IERC4626
+    function redeem(uint256 shares, address receiver, address owner)
+        public
+        override(ERC4626)
+        returns (uint256 assets)
+    {
+        uint256 maxShares = maxRedeem(owner);
+        if (shares > maxShares) {
+            revert ERC4626ExceededMaxRedeem(owner, shares, maxShares);
+        }
+        assets = previewRedeem(shares);
+        uint256 proportion = shares.mulDiv(WAD, totalSupply());
+
+        for (uint32 i; i < middleWares.length; i++) {
+            uint256 sharesToRedeem = middleWares[i].totalSupply().mulDiv(proportion, WAD);
+            middleWares[i].redeem(sharesToRedeem, address(this), address(this));
+        }
+
+        _withdraw(msg.sender, receiver, owner, assets, shares);
     }
 
     /// @inheritdoc IERC4626
