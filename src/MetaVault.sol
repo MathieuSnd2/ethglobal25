@@ -17,18 +17,20 @@ contract MetaVault is ERC4626 {
      * Fixed point weights:
      * 2^256 = 1
      */ 
-    uint256[] internal shareWeights; 
+    uint256[] internal weights;
+
+    uint8 fpShift = 128;
 
     address internal Manager;
 
 
     
-    constructor(IERC20 asset_, IERC4626[] memory middleWares_, uint256[] memory shareWeights_)
+    constructor(IERC20 asset_, IERC4626[] memory middleWares_, uint256[] memory weights_)
         ERC20("MetaVault Share Token", "MVS")
         ERC4626(asset_)
     {
         middleWares = middleWares_;
-        shareWeights = shareWeights_;
+        weights = weights_;
     }
 
 
@@ -42,7 +44,7 @@ contract MetaVault is ERC4626 {
     function totalAssets() public view override(ERC4626) returns (uint256 totalManagedAssets) {
         uint256 sum;
         for(uint32 i = 0; i < middleWares.length; i++) {
-            sum += middleWares[i].totalAssets();
+            sum += middleWares[i].balanceOf(address(this));
         }
         return sum;
     }
@@ -50,21 +52,31 @@ contract MetaVault is ERC4626 {
     function fixedPointMul(uint256 a, uint256 b, uint8 shift) private pure returns (uint256) {
         return a * b >> shift;
     }
-
-    function tokenWeights() private view returns (uint256[] memory) {
-        uint256[] memory tokenWeights = new uint256[](middleWareCnt);
-        uint32 sum = 0;
-        for (uint32 i = 0; i < middleWareCnt; i++) {
-            tokenWeights[i] = middleWares[i].previewWithdraw(uint256(1) << 128);
-            sum += tokenWeights[i];
+    
+    function dispatch(uint256 assets) private view {
+        for (uint32 i = 0; i < middleWares.length; i++) {
+            uint256 allocated = fixedPointMul(assets, weights[i], fpShift);
+            middleWares[i].deposit(allocated, address(this));
         }
-
-        // normalize weights
-        for (uint32 i = 0; i < middleWareCnt; i++) {
-            tokenWeights[i] /= sum;
-        }
-        return tokenWeights;
     }
+
+    /**
+     * @dev Burns shares from owner and sends exactly assets of underlying tokens to receiver.
+     *
+     * - MUST emit the Withdraw event.
+     * - MAY support an additional flow in which the underlying tokens are owned by the Vault contract before the
+     *   withdraw execution, and are accounted for during withdraw.
+     * - MUST revert if all of assets cannot be withdrawn (due to withdrawal limit being reached, slippage, the owner
+     *   not having enough shares, etc).
+     *
+     * Note that some implementations will require pre-requesting to the Vault before a withdrawal may be performed.
+     * Those methods should be performed separately.
+     */
+    function withdraw(uint256 assets, address receiver, address owner) public override(ERC4626) returns (uint256 shares) {
+        for (uint32 i = 0; i < middleWares.length; i++) {
+        }
+    }
+
     
     /**
      * @dev Mints shares Vault shares to receiver by depositing exactly amount of underlying tokens.
@@ -78,35 +90,13 @@ contract MetaVault is ERC4626 {
      * NOTE: most implementations will require pre-approval of the Vault with the Vault’s underlying asset token.
      */
     function deposit(uint256 assets, address receiver) public override(ERC4626) returns (uint256 shares) {
-        require(shareWeights.length == middleWares.length, "ShareWeights and middleWares length mismatch");
-        uint32 middleWareCnt = middleWares.length;
-
         uint256 maxAssets = maxDeposit(receiver);
         if (assets > maxAssets) {
             revert ERC4626ExceededMaxDeposit(receiver, assets, maxAssets);
         }
-
-        uint256[] memory weights = tokenWeights();
-
-        uint256 totalAllocated;
-        for (uint32 i = 0; i < middleWareCnt; i++) {
-            // might save gas by using mint rather than deposit?
-            (, uint256 allocated) = fullMul(assets, weights[i]);
-
-            middleWares[i].deposit(allocated, receiver);
-            totalAllocated += allocated;
-        }
-
-        // Handle any dust due to truncation
-        uint256 dust = assets - totalAllocated;
-        if (dust > 0) {
-            // give it to the first middleware
-            middleWares[0].deposit(dust, receiver);
-        }
-
-        // Optionally mint shares
         shares = previewDeposit(assets);
         _deposit(_msgSender(), receiver, assets, shares);
+        dispatch(assets);
         return shares;
     }
 
@@ -121,7 +111,11 @@ contract MetaVault is ERC4626 {
      *
      * NOTE: most implementations will require pre-approval of the Vault with the Vault’s underlying asset token.
      */
-    function mint(uint256 shares, address receiver) external returns (uint256 assets);
+    function mint(uint256 shares, address receiver) public override(ERC4626) returns (uint256 assets) {
+        assets = super.mint(shares, receiver);
+        dispatch(assets);
+        return assets;
+    }
 
     /**
      * @dev Returns the maximum amount of the underlying asset that can be withdrawn from the owner balance in the
@@ -130,39 +124,14 @@ contract MetaVault is ERC4626 {
      * - MUST return a limited value if owner is subject to some withdrawal limit or timelock.
      * - MUST NOT revert.
      */
-    function maxWithdraw(address owner) external view returns (uint256 maxAssets);
-
-    /**
-     * @dev Allows an on-chain or off-chain user to simulate the effects of their withdrawal at the current block,
-     * given current on-chain conditions.
-     *
-     * - MUST return as close to and no fewer than the exact amount of Vault shares that would be burned in a withdraw
-     *   call in the same transaction. I.e. withdraw should return the same or fewer shares as previewWithdraw if
-     *   called
-     *   in the same transaction.
-     * - MUST NOT account for withdrawal limits like those returned from maxWithdraw and should always act as though
-     *   the withdrawal would be accepted, regardless if the user has enough shares, etc.
-     * - MUST be inclusive of withdrawal fees. Integrators should be aware of the existence of withdrawal fees.
-     * - MUST NOT revert.
-     *
-     * NOTE: any unfavorable discrepancy between convertToShares and previewWithdraw SHOULD be considered slippage in
-     * share price or some other type of condition, meaning the depositor will lose assets by depositing.
-     */
-    function previewWithdraw(uint256 assets) external view returns (uint256 shares);
-
-    /**
-     * @dev Burns shares from owner and sends exactly assets of underlying tokens to receiver.
-     *
-     * - MUST emit the Withdraw event.
-     * - MAY support an additional flow in which the underlying tokens are owned by the Vault contract before the
-     *   withdraw execution, and are accounted for during withdraw.
-     * - MUST revert if all of assets cannot be withdrawn (due to withdrawal limit being reached, slippage, the owner
-     *   not having enough shares, etc).
-     *
-     * Note that some implementations will require pre-requesting to the Vault before a withdrawal may be performed.
-     * Those methods should be performed separately.
-     */
-    function withdraw(uint256 assets, address receiver, address owner) external returns (uint256 shares);
+    function maxWithdraw(address owner) public override(ERC4626) view returns (uint256 maxAssets) {
+        // don't take risk
+        uint256 min = 0;
+        for(uint256 i = 0; i < middleWares.length; i++) {
+            min = Math.min(min, middleWares[i].maxWithdraw(address(this)));
+        }
+        return min;
+    }
 
     /**
      * @dev Returns the maximum amount of Vault shares that can be redeemed from the owner balance in the Vault,
