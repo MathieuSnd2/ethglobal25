@@ -38,7 +38,6 @@ contract MyVaultScenarioTest is Test {
     }
 
     function testScenario() public {
-        console2.log("alice b ", asset.balanceOf(alice));
         // 1. Alice deposits 1 ETH
         vm.startPrank(alice);
         asset.approve(address(metaVault), 1 ether);
@@ -85,7 +84,6 @@ contract MyVaultScenarioTest is Test {
         // 4. Alice deposits 0.5 ETH
 
         vm.startPrank(alice);
-        console2.log(address(metaVault));
         asset.approve(address(metaVault), 1 ether);
         metaVault.deposit(0.5 ether, alice);
         vm.stopPrank();
@@ -100,18 +98,28 @@ contract MyVaultScenarioTest is Test {
 
         // 5. Bob deposits 1 ETH
         vm.startPrank(bob);
+        asset.approve(address(metaVault), 1 ether);
         metaVault.deposit(1 ether, bob);
-/*
 
         assertEq(metaVault.totalAssets(), 2.5 ether, "Step 5");
         assertApproxEqAbs(metaVault.balanceOf(bob), 1.5 ether, 1, "Step 5 LP");
+
+        assertEq(middleWares[0].totalAssets(), 1.25 ether, "Step 5");
+        assertEq(middleWares[0].balanceOf(address(metaVault)), 1.25 ether, "Step 5 LP");
+        assertEq(middleWares[1].totalAssets(), 1.25 ether, "Step 5");
+        assertEq(middleWares[1].balanceOf(address(metaVault)), 1.25 ether, "Step 5 LP");
 
         // 6. Alice withdraws 0.5 ETH
         vm.startPrank(alice);
         metaVault.withdraw(0.5 ether, alice, alice);
 
         assertApproxEqAbs(metaVault.totalAssets(), 2 ether, 1, "Step 6");
-        assertApproxEqAbs(metaVault.balanceOf(alice), 0.75 ether, 1, "Step 6 LP");
+        assertApproxEqAbs(metaVault.balanceOf(alice), 0.5 ether, 1, "Step 6 LP");
+
+        assertEq(middleWares[0].totalAssets(), 1 ether, "Step 6");
+        assertEq(middleWares[0].balanceOf(address(metaVault)), 1 ether, "Step 6");
+        assertEq(middleWares[1].totalAssets(), 1 ether, "Step 6");
+        assertEq(middleWares[1].balanceOf(address(metaVault)), 1 ether, "Step 6");
 
         // 7. Bob withdraws 1 ETH
         vm.startPrank(bob);
@@ -119,6 +127,11 @@ contract MyVaultScenarioTest is Test {
 
         assertApproxEqAbs(metaVault.totalAssets(), 1 ether, 1, "Step 7");
         assertApproxEqAbs(metaVault.balanceOf(bob), 0.5 ether, 1, "Step 7 LP");
+
+        assertEq(middleWares[0].totalAssets(), 0.5 ether, "Step 7");
+        assertEq(middleWares[0].balanceOf(address(metaVault)), 0.5 ether, "Step 7");
+        assertEq(middleWares[1].totalAssets(), 0.5 ether, "Step 7");
+        assertEq(middleWares[1].balanceOf(address(metaVault)), 0.5 ether, "Step 7");
 
         // 8. Everyone withdraws everything
         vm.startPrank(alice);
@@ -129,6 +142,11 @@ contract MyVaultScenarioTest is Test {
 
         assertEq(metaVault.totalAssets(), 0, "Step 8");
         assertEq(metaVault.totalSupply(), 0, "Step 8");
-        */
+
+        assertEq(middleWares[0].totalAssets(), 0 ether, "Step 8");
+        assertEq(middleWares[0].balanceOf(address(metaVault)), 0 ether, "Step 8");
+        assertEq(middleWares[1].totalAssets(), 0 ether, "Step 8");
+        assertEq(middleWares[1].balanceOf(address(metaVault)), 0 ether, "Step 8");
+
     }
 }
