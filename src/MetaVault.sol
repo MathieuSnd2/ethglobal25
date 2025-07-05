@@ -18,10 +18,8 @@ contract MetaVault is ERC4626 {
     uint8 private constant fpShift = 128;
 
     IERC4626[] internal middleWares;
-    /**
-     * Fixed point weights:
-     * 2^256 => 100%
-     */
+
+    /// @dev Fixed point weights: 2^256 => 100%
     uint256[] internal weights;
 
     address internal Manager;
@@ -35,6 +33,7 @@ contract MetaVault is ERC4626 {
         weights = weights_;
     }
 
+    /// @inheritdoc IERC4626
     function totalAssets() public view override(ERC4626) returns (uint256) {
         uint256 sum;
         for (uint32 i = 0; i < middleWares.length; i++) {
@@ -54,18 +53,7 @@ contract MetaVault is ERC4626 {
         }
     }
 
-    /**
-     * @dev Burns shares from owner and sends exactly assets of underlying tokens to receiver.
-     *
-     * - MUST emit the Withdraw event.
-     * - MAY support an additional flow in which the underlying tokens are owned by the Vault contract before the
-     *   withdraw execution, and are accounted for during withdraw.
-     * - MUST revert if all of assets cannot be withdrawn (due to withdrawal limit being reached, slippage, the owner
-     *   not having enough shares, etc).
-     *
-     * Note that some implementations will require pre-requesting to the Vault before a withdrawal may be performed.
-     * Those methods should be performed separately.
-     */
+    /// @inheritdoc IERC4626
     function withdraw(uint256 assets, address receiver, address owner)
         public
         override(ERC4626)
@@ -80,34 +68,14 @@ contract MetaVault is ERC4626 {
         }
     }
 
-    /**
-     * @dev Mints shares Vault shares to receiver by depositing exactly amount of underlying tokens.
-     *
-     * - MUST emit the Deposit event.
-     * - MAY support an additional flow in which the underlying tokens are owned by the Vault contract before the
-     *   deposit execution, and are accounted for during deposit.
-     * - MUST revert if all of assets cannot be deposited (due to deposit limit being reached, slippage, the user not
-     *   approving enough underlying tokens to the Vault contract, etc).
-     *
-     * NOTE: most implementations will require pre-approval of the Vault with the Vault’s underlying asset token.
-     */
+    /// @inheritdoc IERC4626
     function deposit(uint256 assets, address receiver) public override(ERC4626) returns (uint256 shares) {
         shares = super.deposit(assets, receiver);
         dispatch(assets);
         return shares;
     }
 
-    /**
-     * @dev Mints exactly shares Vault shares to receiver by depositing amount of underlying tokens.
-     *
-     * - MUST emit the Deposit event.
-     * - MAY support an additional flow in which the underlying tokens are owned by the Vault contract before the mint
-     *   execution, and are accounted for during mint.
-     * - MUST revert if all of shares cannot be minted (due to deposit limit being reached, slippage, the user not
-     *   approving enough underlying tokens to the Vault contract, etc).
-     *
-     * NOTE: most implementations will require pre-approval of the Vault with the Vault’s underlying asset token.
-     */
+    /// @inheritdoc IERC4626
     function mint(uint256 shares, address receiver) public override(ERC4626) returns (uint256 assets) {
         assets = super.mint(shares, receiver);
         dispatch(assets);
