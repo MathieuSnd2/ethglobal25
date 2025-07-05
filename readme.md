@@ -28,6 +28,15 @@ At any time, the meta-vault has the following assets and liabilities:
 
 When receiving liquidity, the liquidity is distributed to the middlewares following the weights. 
 
+
+## Euler Integration
+
+Thanks to the ERC-4626 standard, our system can natively interface with Euler Finance. This seamless compatibility enables Meta-Vaults to allocate or rebalance liquidity directly into and out of Euler, alongside other yield-generating opportunities.
+
+By abstracting away protocol-specific logic, this integration simplifies strategy execution while unlocking efficient liquidity routing across multiple DeFi platforms—including lending, staking, and liquidity provisioning—all from a unified vault architecture.
+
+
+
 ## Going further
 
 Although this project shows great promise, we weren't able to implement all planned features during the hackathon.
