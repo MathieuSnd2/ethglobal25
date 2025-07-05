@@ -1,4 +1,4 @@
-# Meta-Vault proof of concept (in lack of a better name)
+# Meta Vaults proof of concept
 
 This project aims to be presented at EthGlobal 2025.
 
