@@ -20,13 +20,28 @@ If widely adopted, this system would benefit the entire ecosystem by deepening l
 
 ![Use case](docs/image.png)
 
+The cornerstone of the project is the ERC-4626 standard, which enables the Meta-Vault to interface with any DeFi protocol (staking, restaking, lending, liquidity providing, perpetuals, etc.).
+If the protocol the Meta-Vault interacts with is not ERC-4626 compatible, we provide a middleware that ensures smooth communication with the underlying protocol while adhering to the 4626 standard.
+Since interacting with Euler Vaults is straightforward (deposit/withdraw), it's not necessary to use the EVC contract. However, the EVC can be added for more advanced strategies involving borrowing and collateralization.
+
+The ERC-4626 standard defines a unified interface for tokenized vaults, where users interact using shares that represent a proportional claim on the underlying assets (tokens). Each vault maintains an internal accounting mechanism to convert between shares and tokens using the formulas:
+
+
 At any time, the meta-vault has the following assets and liabilities:
 
 | Liability               | Assets                        |
 | ----------------------- | ----------------------------- |
 | Meta-Vault Shares (MVS) | Underlying Asset Shares (UAS) |
 
-When receiving liquidity, the liquidity is distributed to the middlewares following the weights. 
+
+$ shares = amount * \frac{totalSupply}{totalAssets} $ 
+on deposit
+
+$ amount = shares * \frac{totalAssets}{totalSupply}$ (on withdrawal)
+
+When a user deposits tokens into a Meta-Vault, the vault calculates the number of shares to mint based on the current ratio of total shares to total assets from underlying vaults. Conversely, withdrawing burns shares and releases the corresponding amount of underlying tokens, first from the vault onto the meta-vault contract address, and finaly back to the caller.
+
+This mechanism ensures fair entry and exit for all participants, while enabling dynamic rebalancing of the underlying strategies without affecting share holders' relative positions.
 
 
 ## Euler Integration
