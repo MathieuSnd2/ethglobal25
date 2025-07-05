@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
-import "openzeppelin-contracts/contracts/token/ERC20/extensions/ERC4626.sol";
-import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
+import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
+import {ERC4626, IERC4626} from "openzeppelin-contracts/contracts/token/ERC20/extensions/ERC4626.sol";
+import {ERC20, IERC20} from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 /**
  * @dev Implementation of the MetaVault aggregator PoC for ethglobal 2025 edition.
@@ -12,12 +12,16 @@ import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
  *
  */
 contract MetaVault is ERC4626 {
+    using Math for uint256;
+
     IERC4626[] internal middleWares;
     /**
      * Fixed point weights:
      * 2^256 = 1
      */
     uint256[] internal weights;
+
+    uint256 private constant WAD = 1e18;
 
     uint8 fpShift = 128;
 
@@ -27,6 +31,7 @@ contract MetaVault is ERC4626 {
         ERC20("MetaVault Share Token", "MVS")
         ERC4626(asset_)
     {
+        if (middleWares_.length != weights_.length) revert InvalidLength();
         middleWares = middleWares_;
         weights = weights_;
     }
@@ -50,7 +55,7 @@ contract MetaVault is ERC4626 {
         return a * b >> shift;
     }
 
-    function dispatch(uint256 assets) private view {
+    function dispatch(uint256 assets) private {
         for (uint32 i = 0; i < middleWares.length; i++) {
             uint256 allocated = fixedPointMul(assets, weights[i], fpShift);
             middleWares[i].deposit(allocated, address(this));
@@ -74,7 +79,13 @@ contract MetaVault is ERC4626 {
         override(ERC4626)
         returns (uint256 shares)
     {
-        for (uint32 i = 0; i < middleWares.length; i++) {}
+        shares = super.withdraw(assets, receiver, owner);
+        uint256 proportion = shares.mulDiv(WAD, totalSupply());
+
+        for (uint32 i; i < middleWares.length; i++) {
+            uint256 sharesToRedeem = middleWares[i].totalSupply().mulDiv(proportion, WAD);
+            middleWares[i].redeem(sharesToRedeem, address(this), address(this));
+        }
     }
 
     /**
@@ -111,60 +122,5 @@ contract MetaVault is ERC4626 {
         return assets;
     }
 
-    /**
-     * @dev Returns the maximum amount of the underlying asset that can be withdrawn from the owner balance in the
-     * Vault, through a withdraw call.
-     *
-     * - MUST return a limited value if owner is subject to some withdrawal limit or timelock.
-     * - MUST NOT revert.
-     */
-    function maxWithdraw(address owner) public view override(ERC4626) returns (uint256 maxAssets) {
-        // don't take risk
-        uint256 min = 0;
-        for (uint256 i = 0; i < middleWares.length; i++) {
-            min = Math.min(min, middleWares[i].maxWithdraw(address(this)));
-        }
-        return min;
-    }
-
-    /**
-     * @dev Returns the maximum amount of Vault shares that can be redeemed from the owner balance in the Vault,
-     * through a redeem call.
-     *
-     * - MUST return a limited value if owner is subject to some withdrawal limit or timelock.
-     * - MUST return balanceOf(owner) if owner is not subject to any withdrawal limit or timelock.
-     * - MUST NOT revert.
-     */
-    function maxRedeem(address owner) external view returns (uint256 maxShares);
-
-    /**
-     * @dev Allows an on-chain or off-chain user to simulate the effects of their redemption at the current block,
-     * given current on-chain conditions.
-     *
-     * - MUST return as close to and no more than the exact amount of assets that would be withdrawn in a redeem call
-     *   in the same transaction. I.e. redeem should return the same or more assets as previewRedeem if called in the
-     *   same transaction.
-     * - MUST NOT account for redemption limits like those returned from maxRedeem and should always act as though the
-     *   redemption would be accepted, regardless if the user has enough shares, etc.
-     * - MUST be inclusive of withdrawal fees. Integrators should be aware of the existence of withdrawal fees.
-     * - MUST NOT revert.
-     *
-     * NOTE: any unfavorable discrepancy between convertToAssets and previewRedeem SHOULD be considered slippage in
-     * share price or some other type of condition, meaning the depositor will lose assets by redeeming.
-     */
-    function previewRedeem(uint256 shares) external view returns (uint256 assets);
-
-    /**
-     * @dev Burns exactly shares from owner and sends assets of underlying tokens to receiver.
-     *
-     * - MUST emit the Withdraw event.
-     * - MAY support an additional flow in which the underlying tokens are owned by the Vault contract before the
-     *   redeem execution, and are accounted for during redeem.
-     * - MUST revert if all of shares cannot be redeemed (due to withdrawal limit being reached, slippage, the owner
-     *   not having enough shares, etc).
-     *
-     * NOTE: some implementations will require pre-requesting to the Vault before a withdrawal may be performed.
-     * Those methods should be performed separately.
-     */
-    function redeem(uint256 shares, address receiver, address owner) external returns (uint256 assets);
+    error InvalidLength();
 }
