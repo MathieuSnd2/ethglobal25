@@ -14,8 +14,14 @@ contract MyVaultScenarioTest is Test {
 
     function setUp() public {
         asset = new MockERC20("MockToken", "MTK", address(this), 0);
-        IERC4626[] memory middleWares_;
-        uint256[] memory weights_;
+        IERC4626[] memory middleWares = {
+             new SimpleVault(asset),
+             new SimpleVault(asset),
+        };
+        uint256[] memory weights = {
+            uint256(-1) / 2 // one half in 
+        };
+
         vault = new MetaVault(ERC20(address(asset)));
 
         // Mint tokens to users

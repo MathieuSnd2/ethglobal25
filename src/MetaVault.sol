@@ -19,7 +19,7 @@ contract MetaVault is ERC4626 {
 
     IERC4626[] internal middleWares;
 
-    /// @dev Fixed point weights: 2^256 => 100%
+    /// @dev Fixed point weights: 2^128 => 100%
     uint256[] internal weights;
 
     address internal Manager;
